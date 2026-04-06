@@ -1,0 +1,259 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FuelGuard — Petrol Pump Control System</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Rajdhani (industrial) + Inter (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    // Extend Tailwind config with custom tokens
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Rajdhani', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            fuel: {
+              50:  '#fff7ed',
+              100: '#ffedd5',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              900: '#7c2d12',
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'slide-up': 'slideUp 0.4s ease-out',
+            'fade-in': 'fadeIn 0.3s ease-out',
+          },
+          keyframes: {
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* ── Base styles ─────────────────────────────────────────────── */
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      min-height: 100vh;
+    }
+
+    /* Subtle grid texture on background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(249,115,22,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249,115,22,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Upload drop zone ────────────────────────────────────────── */
+    #drop-zone {
+      transition: all 0.25s ease;
+      background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+    }
+    #drop-zone.dragover {
+      border-color: #f97316;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a1a0a 100%);
+      transform: scale(1.01);
+    }
+
+    /* ── Preview image ───────────────────────────────────────────── */
+    #preview-img {
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    /* ── Result cards ────────────────────────────────────────────── */
+    .result-allowed {
+      background: linear-gradient(135deg, #052e16 0%, #14532d 100%);
+      border-color: #16a34a;
+    }
+    .result-blocked {
+      background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+      border-color: #dc2626;
+    }
+    .result-error {
+      background: linear-gradient(135deg, #1c1400 0%, #422006 100%);
+      border-color: #d97706;
+    }
+
+    /* ── Spinner ─────────────────────────────────────────────────── */
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(249,115,22,0.2);
+      border-top-color: #f97316;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Glow effect on submit button ───────────────────────────── */
+    #submit-btn:not(:disabled):hover {
+      box-shadow: 0 0 24px rgba(249, 115, 22, 0.45);
+    }
+
+    /* ── Number plate display ────────────────────────────────────── */
+    .plate-display {
+      font-family: 'Rajdhani', sans-serif;
+      letter-spacing: 0.15em;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body class="relative">
+
+  <!-- ─── Page wrapper ──────────────────────────────────────────────────── -->
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-12">
+
+    <!-- ─── Header ───────────────────────────────────────────────────────── -->
+    <header class="text-center mb-10">
+      <!-- Logo mark -->
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-fuel-500/10 border border-fuel-500/30 mb-4">
+        <svg class="w-8 h-8 text-fuel-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M3 10h2l1 2h12l1-2h2M5 10V7a2 2 0 012-2h6l2 3M5 10l-1 8h16l-1-8
+               M9 18v2m6-2v2M8 5h2m2 0h2"/>
+        </svg>
+      </div>
+      <h1 class="font-display text-4xl md:text-5xl font-bold text-white tracking-wide">
+        FUEL<span class="text-fuel-500">GUARD</span>
+      </h1>
+      <p class="mt-2 text-zinc-400 text-sm font-body">
+        Petrol Pump Automated Fuel Dispensing Control
+      </p>
+    </header>
+
+    <!-- ─── Main card ─────────────────────────────────────────────────────── -->
+    <div class="w-full max-w-lg">
+      <div class="rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-sm p-6 shadow-2xl">
+
+        <!-- Card title -->
+        <h2 class="font-display text-xl text-zinc-100 font-semibold mb-5 flex items-center gap-2">
+          <span class="w-1.5 h-5 bg-fuel-500 rounded-full inline-block"></span>
+          Vehicle Verification
+        </h2>
+
+        <!-- ── Upload zone ──────────────────────────────────────────────── -->
+        <div id="drop-zone"
+             class="relative border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer mb-4"
+             onclick="document.getElementById('image-input').click()"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event)">
+
+          <!-- Default state (no image) -->
+          <div id="upload-placeholder">
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center">
+                <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                </svg>
+              </div>
+              <p class="text-zinc-400 text-sm">
+                <span class="text-fuel-400 font-medium">Click to upload</span> or drag & drop
+              </p>
+              <p class="text-zinc-600 text-xs">JPG, PNG, WEBP up to 10MB</p>
+            </div>
+          </div>
+
+          <!-- Preview state (image selected) -->
+          <div id="upload-preview" class="hidden flex-col items-center gap-3">
+            <img id="preview-img" src="" alt="Preview" class="max-h-48 rounded-lg border border-zinc-700"/>
+            <p id="file-name" class="text-zinc-400 text-xs truncate max-w-full px-2"></p>
+            <button type="button"
+                    onclick="clearImage(event)"
+                    class="text-xs text-red-400 hover:text-red-300 transition-colors">
+              ✕ Remove image
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden file input -->
+        <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)"/>
+
+        <!-- ── Manual number fallback ───────────────────────────────────── -->
+        <div class="mb-4">
+          <label for="manual-number" class="block text-xs font-medium text-zinc-400 mb-1.5">
+            Manual Vehicle Number
+            <span class="text-zinc-600">(optional – used if OCR fails)</span>
+          </label>
+          <input type="text"
+                 id="manual-number"
+                 placeholder="e.g. DH1234AB"
+                 maxlength="20"
+                 class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5
+                        text-white placeholder-zinc-600 text-sm font-display tracking-widest
+                        focus:outline-none focus:border-fuel-500 focus:ring-1 focus:ring-fuel-500/30
+                        transition-colors uppercase"
+                 oninput="this.value = this.value.toUpperCase()"/>
+        </div>
+
+        <!-- ── Submit button ────────────────────────────────────────────── -->
+        <button id="submit-btn"
+                onclick="submitCheck()"
+                class="w-full py-3 px-6 rounded-xl font-display text-lg font-semibold tracking-wide
+                       bg-fuel-500 hover:bg-fuel-600 text-white
+                       disabled:opacity-40 disabled:cursor-not-allowed
+                       transition-all duration-200 flex items-center justify-center gap-2">
+          <svg id="btn-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span id="btn-text">CHECK VEHICLE</span>
+          <div id="btn-spinner" class="spinner hidden"></div>
+        </button>
+
+      </div><!-- /card -->
+
+      <!-- ─── Result section ────────────────────────────────────────────── -->
+      <div id="result-section" class="mt-4 hidden animate-slide-up">
+        <!-- Filled dynamically by JavaScript -->
+      </div>
+
+    </div><!-- /max-w-lg -->
+
+    <!-- ─── Footer ────────────────────────────────────────────────────────── -->
+    <footer class="mt-12 text-zinc-700 text-xs text-center">
+      FuelGuard v1.0 &nbsp;·&nbsp; Developed by F. F. Prachaw
+    </footer>
+
+  </div><!-- /wrapper -->
+
+  <!-- ─── JavaScript ────────────────────────────────────────────────────────── -->
+  <script src="{% static 'js/app.js' %}"></script>
+
+</body>
+</html>
