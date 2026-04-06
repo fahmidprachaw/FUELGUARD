@@ -99,7 +99,8 @@ import pytesseract
 
 # ── Windows: set Tesseract path ───────────────────────────────────────────────
 # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-pytesseract.pytesseract.tesseract_cmd = 'tesseract'
+# pytesseract.pytesseract.tesseract_cmd = 'tesseract'
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 
 # ── Bangla digit → English digit mapping ─────────────────────────────────────
